@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useSession, signIn } from "next-auth/react";
 
 import { E4Button } from "../components/ui/E4Button";
 import { E4Card } from "../components/ui/E4Card";
@@ -24,6 +25,8 @@ type ArtistProfile = {
 };
 
 export default function ArtistProfilePage() {
+  const { data: session, status } = useSession();
+
   const [profile, setProfile] = useState<ArtistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -92,6 +95,39 @@ export default function ArtistProfilePage() {
     }
   };
 
+  // ✅ Auth guards
+
+  if (status === "loading") {
+    return (
+      <main className="max-w-5xl mx-auto py-10 px-4">
+        <E4PageHeader
+          title="Artist Profile"
+          subtitle="Loading your account..."
+        />
+      </main>
+    );
+  }
+
+  if (!session) {
+    return (
+      <main className="max-w-3xl mx-auto py-10 px-4">
+        <E4PageHeader
+          title="Sign in required"
+          subtitle="You need to log in to view your artist profile."
+        />
+        <div className="mt-6">
+          <E4Button
+            className="w-full max-w-xs"
+            onClick={() => signIn()}
+          >
+            Go to Sign In
+          </E4Button>
+        </div>
+      </main>
+    );
+  }
+
+  // ✅ Logged in – render full profile UI
   return (
     <div
       style={{
@@ -280,7 +316,8 @@ export default function ArtistProfilePage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(220px, 1fr))",
                     gap: 16,
                   }}
                 >
@@ -420,12 +457,19 @@ export default function ArtistProfilePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(260px, 1fr))",
                   gap: 24,
                 }}
               >
                 {/* Streaming profiles */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
                   <p
                     style={{
                       fontSize: 11,
@@ -475,7 +519,13 @@ export default function ArtistProfilePage() {
                 </div>
 
                 {/* Social + web */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
                   <p
                     style={{
                       fontSize: 11,
