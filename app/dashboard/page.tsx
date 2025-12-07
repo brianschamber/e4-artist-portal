@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 
 import { E4Card } from "../components/ui/E4Card";
 import { E4PageHeader } from "../components/ui/E4PageHeader";
@@ -48,9 +48,7 @@ export default function DashboardPage() {
   }, [status]);
 
   const displayName =
-    (session as any)?.user?.display_name ||
-    session?.user?.name ||
-    "Artist";
+    (session as any)?.user?.display_name || session?.user?.name || "Artist";
 
   // Loading
   if (status === "loading") {
@@ -73,9 +71,12 @@ export default function DashboardPage() {
           subtitle="You need to log in to view your artist dashboard."
         />
         <div className="mt-6">
-          <Link href="/auth/signin">
-            <E4Button>Go to Sign In</E4Button>
-          </Link>
+          <E4Button
+            className="w-full max-w-xs"
+            onClick={() => signIn()}
+          >
+            Go to Sign In
+          </E4Button>
         </div>
       </main>
     );
@@ -93,7 +94,6 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <section className="grid gap-4 md:grid-cols-3">
-
         {/* New Release */}
         <E4Card>
           <div>
@@ -148,7 +148,6 @@ export default function DashboardPage() {
             </Link>
           </div>
         </E4Card>
-
       </section>
 
       {/* Stats */}
@@ -179,7 +178,9 @@ export default function DashboardPage() {
               Pending Payouts
             </p>
             <p className="mt-2 text-2xl font-bold">
-              {loadingStats ? "…" : `$${(stats?.pendingPayouts ?? 0).toFixed(2)}`}
+              {loadingStats ? "…" : `$${(stats?.pendingPayouts ?? 0).toFixed(
+                2
+              )}`}
             </p>
           </E4Card>
 
@@ -188,7 +189,9 @@ export default function DashboardPage() {
               Lifetime Earnings
             </p>
             <p className="mt-2 text-2xl font-bold">
-              {loadingStats ? "…" : `$${(stats?.totalEarnings ?? 0).toFixed(2)}`}
+              {loadingStats ? "…" : `$${(stats?.totalEarnings ?? 0).toFixed(
+                2
+              )}`}
             </p>
           </E4Card>
         </div>
