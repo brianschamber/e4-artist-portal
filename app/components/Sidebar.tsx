@@ -5,10 +5,12 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
+// Added: Upload link in navItems
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/releases", label: "Releases" },
   { href: "/tracks", label: "Tracks" },
+  { href: "/upload", label: "Upload" },  // 👈 NEW
   { href: "/earnings", label: "Earnings" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
@@ -22,9 +24,9 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* TOP: Large Logo + Subtitle + Nav */}
+      {/* TOP: Logo + Subtitle + Nav */}
       <div>
-        {/* Large centered logo */}
+        {/* Big Logo */}
         <div className="sidebar-logo-big">
           <Image
             src="/e4-logo.png"
@@ -34,12 +36,12 @@ export default function Sidebar() {
           />
         </div>
 
-        {/* GOLD, UPPERCASE SUBTITLE */}
+        {/* GOLD SUBTITLE */}
         <div className="sidebar-subtitle sidebar-subtitle-big">
           ARTIST PORTAL
         </div>
 
-        {/* Navigation Links */}
+        {/* NAVIGATION */}
         <nav aria-label="Main navigation">
           {navItems.map((item) => {
             const isActive =
@@ -59,7 +61,7 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* BOTTOM: User Info + Sign Out */}
+      {/* BOTTOM: User Info */}
       <div className="sidebar-user">
         <div
           style={{
