@@ -29,9 +29,12 @@ export default function ReleasesPage() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
-  // Current artistId comes from the logged-in user ONLY
   const [currentArtistId, setCurrentArtistId] = useState("");
+
+  // Debug: see what NextAuth thinks on this page
+  useEffect(() => {
+    console.log("🧪 ReleasesPage session debug:", { status, session });
+  }, [status, session]);
 
   // Pull artistId from the session
   useEffect(() => {
@@ -48,12 +51,15 @@ export default function ReleasesPage() {
     }
   }, [session, status]);
 
-  // Load releases
+  // Load releases once auth state is known
   useEffect(() => {
+    if (status === "loading") return;
+
     async function load() {
       try {
         const res = await fetch("/api/releases");
         const data = await res.json();
+
         if (data.ok && Array.isArray(data.releases)) {
           setReleases(data.releases);
         } else {
@@ -66,33 +72,41 @@ export default function ReleasesPage() {
       }
     }
 
-    // Only load once we know the session state
-    if (status !== "loading") {
-      load();
-    }
+    load();
   }, [status]);
 
-  // First: scope releases to the current artist
+  // While auth or data is loading
+  if (loading || status === "loading") {
+    return <div style={{ padding: 24 }}>Loading releases…</div>;
+  }
+
+  // If user is not logged in (in case middleware doesn't already catch this)
+  if (status === "unauthenticated") {
+    return (
+      <div style={{ padding: 24 }}>
+        You must be logged in to view your releases.
+      </div>
+    );
+  }
+
+  // Scope releases to the current artist
   const artistScoped = currentArtistId
     ? releases.filter((rel) => rel.artist_id === currentArtistId)
     : releases;
 
-  // Then: apply search filter
+  // Apply search filter
   const filtered = artistScoped.filter((rel) => {
     const title = rel.title || "";
     const statusText = rel.status || "";
     const artistId = rel.artist_id || "";
     const q = search.toLowerCase();
+
     return (
       title.toLowerCase().includes(q) ||
       statusText.toLowerCase().includes(q) ||
       artistId.toLowerCase().includes(q)
     );
   });
-
-  if (loading || status === "loading") {
-    return <div style={{ padding: 24 }}>Loading releases…</div>;
-  }
 
   return (
     <div>

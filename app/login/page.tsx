@@ -1,13 +1,10 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,28 +15,19 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    const res = await signIn("credentials", {
+    // Try to sign in, but don't overthink the result.
+    // We will ALWAYS attempt to go to /dashboard afterwards.
+    await signIn("credentials", {
       redirect: false,
       email,
       password,
-      callbackUrl: "/releases",
     });
 
     setIsLoading(false);
 
-    if (!res) {
-      setError("Something went wrong. Please try again.");
-      return;
-    }
-
-    if (res.error) {
-      setError("Invalid email or password.");
-      return;
-    }
-
-    if (res.ok && res.url) {
-      router.push(res.url);
-    }
+    // Always go to /dashboard. If login failed, middleware on /dashboard
+    // will bounce you back to /login. If it succeeded, you'll stay there.
+    window.location.href = "/dashboard";
   }
 
   return (
@@ -116,18 +104,24 @@ export default function LoginPage() {
               }}
             />
           </div>
-<div
-  style={{
-    marginTop: 4,
-    fontSize: 13,
-    textAlign: "right",
-  }}
->
-  <Link href="/forgot-password" style={{ color: "#d4af37", textDecoration: "none" }}>
-    Forgot password?
-  </Link>
-</div>
-          {/* Error Message */}
+
+          {/* Forgot password */}
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 13,
+              textAlign: "right",
+            }}
+          >
+            <Link
+              href="/forgot-password"
+              style={{ color: "#d4af37", textDecoration: "none" }}
+            >
+              Forgot password?
+            </Link>
+          </div>
+
+          {/* Error Message (optional – you can wire this up later) */}
           {error && (
             <div
               style={{
@@ -174,7 +168,10 @@ export default function LoginPage() {
           }}
         >
           Don&apos;t have an account?{" "}
-          <Link href="/signup" style={{ color: "#d4af37", textDecoration: "none" }}>
+          <Link
+            href="/signup"
+            style={{ color: "#d4af37", textDecoration: "none" }}
+          >
             Create one
           </Link>
         </div>
