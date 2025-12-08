@@ -15,8 +15,6 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    // Try to sign in, but don't overthink the result.
-    // We will ALWAYS attempt to go to /dashboard afterwards.
     await signIn("credentials", {
       redirect: false,
       email,
@@ -25,8 +23,7 @@ export default function LoginPage() {
 
     setIsLoading(false);
 
-    // Always go to /dashboard. If login failed, middleware on /dashboard
-    // will bounce you back to /login. If it succeeded, you'll stay there.
+    // Always go to /dashboard. Middleware will bounce you back if not authed.
     window.location.href = "/dashboard";
   }
 
@@ -61,7 +58,6 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: 16 }}
         >
-          {/* Email */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label htmlFor="email" style={{ fontSize: 14 }}>
               Email
@@ -83,7 +79,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Password */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label htmlFor="password" style={{ fontSize: 14 }}>
               Password
@@ -105,7 +100,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Forgot password */}
           <div
             style={{
               marginTop: 4,
@@ -121,7 +115,6 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Error Message (optional – you can wire this up later) */}
           {error && (
             <div
               style={{
@@ -137,7 +130,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Sign In button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -158,7 +150,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Signup link */}
         <div
           style={{
             marginTop: 18,

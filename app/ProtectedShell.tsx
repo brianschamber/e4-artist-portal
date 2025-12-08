@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useSession } from "next-auth/react";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "./Sidebar"; // ✅ correct path
 
 export default function ProtectedShell({ children }: { children: ReactNode }) {
   const { status } = useSession();
