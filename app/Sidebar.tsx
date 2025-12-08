@@ -5,9 +5,12 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
+// Navigation items, now including Upload
 const navItems = [
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/releases", label: "Releases" },
   { href: "/tracks", label: "Tracks" },
+  { href: "/upload", label: "Upload" }, // 👈 Upload added here
   { href: "/earnings", label: "Earnings" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },
@@ -21,29 +24,29 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* TOP: Logo + Title + Nav */}
+      {/* TOP: Logo + Subtitle + Nav */}
       <div>
-        {/* Logo Row */}
-        <div className="sidebar-logo-row">
-          <div className="sidebar-logo">
-            <Image
-              src="/e4-logo.png"
-              alt="E4 Entertainment"
-              width={40}
-              height={40}
-            />
-          </div>
-
-          <div>
-            <div className="sidebar-title">E4</div>
-            <div className="sidebar-subtitle">Artist Portal</div>
-          </div>
+        {/* Big Logo */}
+        <div className="sidebar-logo-big">
+          <Image
+            src="/e4-logo.png"
+            alt="E4 Entertainment"
+            width={90}
+            height={90}
+          />
         </div>
 
-        {/* Navigation Links */}
+        {/* GOLD SUBTITLE */}
+        <div className="sidebar-subtitle sidebar-subtitle-big">
+          ARTIST PORTAL
+        </div>
+
+        {/* NAVIGATION */}
         <nav aria-label="Main navigation">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href || pathname.startsWith(item.href + "/");
+
             return (
               <Link
                 key={item.href}
@@ -58,12 +61,22 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* BOTTOM: User Info + Sign Out */}
+      {/* BOTTOM: User Info */}
       <div className="sidebar-user">
-        <div style={{ marginBottom: "8px", textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: "0.16em" }}>
+        <div
+          style={{
+            marginBottom: "8px",
+            textTransform: "uppercase",
+            fontSize: "0.7rem",
+            letterSpacing: "0.16em",
+          }}
+        >
           Signed in as
         </div>
-        <strong style={{ display: "block", marginBottom: "4px" }}>{email}</strong>
+
+        <strong style={{ display: "block", marginBottom: "4px" }}>
+          {email}
+        </strong>
 
         {session && (
           <button
