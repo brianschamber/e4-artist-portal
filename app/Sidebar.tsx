@@ -5,12 +5,11 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 
-// Navigation items, now including Upload
+// Navigation items (Upload removed)
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/releases", label: "Releases" },
   { href: "/tracks", label: "Tracks" },
-  { href: "/upload", label: "Upload" }, // 👈 Upload added here
   { href: "/earnings", label: "Earnings" },
   { href: "/profile", label: "Profile" },
   { href: "/settings", label: "Settings" },

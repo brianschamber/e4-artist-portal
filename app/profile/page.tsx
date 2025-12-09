@@ -33,19 +33,90 @@ export default function ArtistProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // ---------- LOAD PROFILE FROM API ----------
   useEffect(() => {
+    if (status === "loading") return;
+    if (status !== "authenticated") {
+      setLoading(false);
+      return;
+    }
+
     const loadProfile = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // TEMP: mock profile so the page renders without an API
-        const mock: ArtistProfile = {
-          artist_id: "demo-artist",
-          stage_name: "Demo Artist",
-          email: "artist@example.com",
+        const res = await fetch("/api/artist/profile", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+
+        if (!res.ok) {
+          console.error("GET /api/artist/profile failed:", res.status);
+          // Try to log error body for debugging
+          try {
+            const errBody = await res.json();
+            console.error("Profile API error body:", errBody);
+          } catch {
+            // ignore
+          }
+
+          // Fall back to a minimal profile so the page still renders
+          setError(
+            "Something went wrong loading your profile. You can still edit and save."
+          );
+
+          const fallback: ArtistProfile = {
+            artist_id: "unknown",
+            stage_name: "Your Artist Name",
+            email: session?.user?.email ?? null,
+            avatar_url: "",
+            bio: "",
+            spotify_url: "",
+            apple_music_url: "",
+            soundcloud_url: "",
+            youtube_url: "",
+            instagram_handle: "",
+            tiktok_handle: "",
+            website_url: "",
+          };
+
+          setProfile(fallback);
+          setLoading(false);
+          return; // important: don't try to read res.json() again
+        }
+
+        const data = await res.json();
+        // data is the profile payload from the API
+        const nextProfile: ArtistProfile = {
+          artist_id: data.artist_id ?? "—",
+          stage_name: data.display_name ?? "New Artist",
+          email: data.email ?? session?.user?.email ?? null,
+          avatar_url: data.avatar_url ?? "",
+          bio: data.bio ?? "",
+          spotify_url: data.spotify_url ?? "",
+          apple_music_url: data.apple_music_url ?? "",
+          soundcloud_url: data.soundcloud_url ?? "",
+          youtube_url: data.youtube_url ?? "",
+          instagram_handle:
+            data.instagram_handle ?? data.instagram ?? "",
+          tiktok_handle: data.tiktok_handle ?? "",
+          website_url: data.website_url ?? data.website ?? "",
+        };
+
+        setProfile(nextProfile);
+      } catch (err) {
+        console.error(err);
+        setError(
+          "Something went wrong loading your profile. You can still edit and save."
+        );
+
+        const fallback: ArtistProfile = {
+          artist_id: "unknown",
+          stage_name: "Your Artist Name",
+          email: session?.user?.email ?? null,
           avatar_url: "",
-          bio: "This is your artist bio. Update it to tell your story.",
+          bio: "",
           spotify_url: "",
           apple_music_url: "",
           soundcloud_url: "",
@@ -54,18 +125,14 @@ export default function ArtistProfilePage() {
           tiktok_handle: "",
           website_url: "",
         };
-
-        setProfile(mock);
-      } catch (err: any) {
-        console.error(err);
-        setError("Something went wrong loading your profile.");
+        setProfile(fallback);
       } finally {
         setLoading(false);
       }
     };
 
     loadProfile();
-  }, []);
+  }, [status, session]);
 
   const updateField = <K extends keyof ArtistProfile>(
     key: K,
@@ -75,6 +142,7 @@ export default function ArtistProfilePage() {
     setProfile({ ...profile, [key]: value });
   };
 
+  // ---------- SAVE PROFILE TO API ----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -84,10 +152,53 @@ export default function ArtistProfilePage() {
       setError(null);
       setSuccess(null);
 
-      // TEMP: just simulate a save
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setSuccess("Profile saved (mock). Hook this up to /api/artist/profile.");
-    } catch (err: any) {
+      // Map front-end fields → backend snake_case payload
+      const payload = {
+        display_name: profile.stage_name,
+        bio: profile.bio ?? "",
+        website: profile.website_url ?? "",
+        instagram: profile.instagram_handle ?? "",
+        twitter: null,
+        avatar_url: profile.avatar_url ?? "",
+        // Extras for when the DB supports them
+        spotify_url: profile.spotify_url ?? "",
+        apple_music_url: profile.apple_music_url ?? "",
+        soundcloud_url: profile.soundcloud_url ?? "",
+        youtube_url: profile.youtube_url ?? "",
+        tiktok_handle: profile.tiktok_handle ?? "",
+      };
+
+      const res = await fetch("/api/artist/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        console.error("PUT /api/artist/profile failed:", res.status);
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save profile.");
+      }
+
+      const data = await res.json();
+      // Optionally refresh state from server response:
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              stage_name: data.display_name ?? prev.stage_name,
+              bio: data.bio ?? prev.bio,
+              avatar_url: data.avatar_url ?? prev.avatar_url,
+              website_url: data.website ?? prev.website_url,
+              instagram_handle: data.instagram ?? prev.instagram_handle,
+            }
+          : prev
+      );
+
+      setSuccess("Profile saved successfully.");
+    } catch (err) {
       console.error(err);
       setError("Something went wrong saving your profile.");
     } finally {
@@ -95,8 +206,7 @@ export default function ArtistProfilePage() {
     }
   };
 
-  // ✅ Auth guards
-
+  // ---------- AUTH GUARDS ----------
   if (status === "loading") {
     return (
       <main className="max-w-5xl mx-auto py-10 px-4">
@@ -116,10 +226,7 @@ export default function ArtistProfilePage() {
           subtitle="You need to log in to view your artist profile."
         />
         <div className="mt-6">
-          <E4Button
-            className="w-full max-w-xs"
-            onClick={() => signIn()}
-          >
+          <E4Button className="w-full max-w-xs" onClick={() => signIn()}>
             Go to Sign In
           </E4Button>
         </div>
@@ -127,7 +234,7 @@ export default function ArtistProfilePage() {
     );
   }
 
-  // ✅ Logged in – render full profile UI
+  // ---------- MAIN UI ----------
   return (
     <div
       style={{
@@ -158,9 +265,7 @@ export default function ArtistProfilePage() {
       </div>
 
       {loading && (
-        <p style={{ fontSize: 14, color: "#bbbbbb" }}>
-          Loading your profile…
-        </p>
+        <p style={{ fontSize: 14, color: "#bbbbbb" }}>Loading your profile…</p>
       )}
 
       {!loading && error && (
@@ -308,8 +413,8 @@ export default function ArtistProfilePage() {
                       maxWidth: 520,
                     }}
                   >
-                    This information is used for your artist header,
-                    statements, and internal E4 communications.
+                    This information is used for your artist header, statements,
+                    and internal E4 communications.
                   </p>
                 </div>
 
@@ -433,8 +538,8 @@ export default function ArtistProfilePage() {
                     Profiles & Links
                   </h3>
                   <p style={{ fontSize: 12, color: "#aaaaaa" }}>
-                    Connect your streaming profiles and social handles so E4 can
-                    route traffic and promotion to the right places.
+                    Connect your streaming profiles and social handles so E4
+                    can route traffic and promotion to the right places.
                   </p>
                 </div>
                 <span

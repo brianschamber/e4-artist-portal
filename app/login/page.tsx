@@ -1,21 +1,33 @@
 "use client";
 
-import React, { useState, type FormEvent } from "react";
-import { signIn } from "next-auth/react";
+import React, { useState, type FormEvent, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Hooks are ALWAYS called – no conditionals
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // If already logged in, send to dashboard
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    await signIn("credentials", {
+    const res = await signIn("credentials", {
       redirect: false,
       email,
       password,
@@ -23,8 +35,48 @@ export default function LoginPage() {
 
     setIsLoading(false);
 
-    // Always go to /dashboard. Middleware will bounce you back if not authed.
-    window.location.href = "/dashboard";
+    if (res?.error) {
+      setError("Invalid email or password.");
+      return;
+    }
+
+    // Let middleware enforce access, we just go to dashboard
+    router.replace("/dashboard");
+  }
+
+  if (status === "loading") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+        }}
+      >
+        Checking your session…
+      </div>
+    );
+  }
+
+  // While redirecting after login
+  if (status === "authenticated") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+        }}
+      >
+        Redirecting to your dashboard…
+      </div>
+    );
   }
 
   return (

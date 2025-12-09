@@ -1,4 +1,4 @@
-// app/api/uploads/audio/route.ts
+// app/api/uploads/cover/route.ts
 import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
@@ -11,16 +11,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       onBeforeGenerateToken: async () => ({
         addRandomSuffix: true,
-        allowedContentTypes: ["audio/mpeg", "audio/wav", "audio/*"],
-        maximumSizeInBytes: 50 * 1024 * 1024,
+        allowedContentTypes: [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+          "image/*",
+        ],
+        maximumSizeInBytes: 10 * 1024 * 1024,
       }),
     });
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error("Blob audio upload error:", err);
+    console.error("Blob cover upload error:", err);
     return NextResponse.json(
-      { ok: false, error: "Failed to generate upload token for audio" },
+      { ok: false, error: "Failed to generate upload token for cover art" },
       { status: 500 }
     );
   }

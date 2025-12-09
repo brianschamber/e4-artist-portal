@@ -14,6 +14,10 @@ import { E4Card } from "../../components/ui/E4Card";
 import { E4PageHeader } from "../../components/ui/E4PageHeader";
 import { E4Input } from "../../components/ui/E4Input";
 
+// 🔹 NEW: Blob client imports
+import { upload } from "@vercel/blob/client";
+import type { PutBlobResult } from "@vercel/blob";
+
 type Release = {
   release_id: string;
   artist_id: string;
@@ -125,25 +129,30 @@ export default function ReleaseDetailPage() {
     }
   }
 
+  // 🔹 UPDATED: use Vercel Blob for covers
   async function uploadCoverIfNeeded(): Promise<string | null> {
+    // If no new file selected, keep existing cover URL
     if (!coverFile) return editCoverUrl || null;
 
     try {
       setUploadingCover(true);
 
-      const formData = new FormData();
-      formData.append("file", coverFile);
-
-      const res = await fetch("/api/uploads/cover", {
-        method: "POST",
-        body: formData, // LET fetch set Content-Type to multipart/form-data
+      const result: PutBlobResult = await upload(coverFile.name, coverFile, {
+        access: "public",
+        handleUploadUrl: "/api/uploads/cover",
+        multipart: true,
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error);
+      setCoverFile(null);
+      setCoverPreview(result.url);
+      setEditCoverUrl(result.url);
 
-      setEditCoverUrl(data.url);
-      return data.url;
+      return result.url;
+    } catch (err) {
+      console.error("Error uploading cover:", err);
+      setError("Failed to upload cover art.");
+      // fall back to previous URL if we had one
+      return editCoverUrl || null;
     } finally {
       setUploadingCover(false);
     }
@@ -158,6 +167,7 @@ export default function ReleaseDetailPage() {
     setAudioFileName(file ? file.name : "");
   }
 
+  // 🔹 UPDATED: use Vercel Blob for audio
   async function uploadAudioIfNeeded(): Promise<string | null> {
     // If no file picked, just use the manual URL field (or null)
     if (!audioFile) {
@@ -165,27 +175,18 @@ export default function ReleaseDetailPage() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append("file", audioFile);
-
-      const res = await fetch("/api/uploads/audio", {
-        method: "POST",
-        body: formData, // again, NO manual Content-Type header
+      const result: PutBlobResult = await upload(audioFile.name, audioFile, {
+        access: "public",
+        handleUploadUrl: "/api/uploads/audio",
+        multipart: true,
       });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        console.error("Audio upload error:", data.error);
-        setError(data.error || "Failed to upload audio file.");
-        return null;
-      }
-
-      // Clear file info and use returned URL
+      // Clear file info and use returned Blob URL
       setAudioFile(null);
       setAudioFileName("");
-      setAudioUrl(data.url || "");
-      return data.url as string;
+      setAudioUrl(result.url || "");
+
+      return result.url;
     } catch (err) {
       console.error("Error uploading audio:", err);
       setError("Failed to upload audio file.");
@@ -301,6 +302,8 @@ export default function ReleaseDetailPage() {
 
       // if upload failed AND a file was selected, stop here
       if (!audioUrlToSave && audioFile) {
+        setError("Audio upload failed. Track was not saved.");
+        setSavingTrack(false);
         return;
       }
 

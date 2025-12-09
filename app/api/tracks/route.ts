@@ -7,17 +7,20 @@ function error(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-/* GET /api/tracks?releaseId=... */
+/* ----------------------------------------------------
+   GET /api/tracks
+   Modes:
+   1. ?trackId=xyz        → single track
+   2. ?releaseId=abc      → tracks for one release
+   3. no params           → ALL TRACKS (library mode)
+---------------------------------------------------- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const releaseId = searchParams.get("releaseId");
     const trackId = searchParams.get("trackId");
 
-    if (!releaseId && !trackId) {
-      return error("releaseId or trackId is required", 400);
-    }
-
+    /* 1️⃣ Return single track */
     if (trackId) {
       const rows = await sql`
         SELECT track_id, release_id, track_number, title, audio_url
@@ -28,21 +31,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, track: rows[0] });
     }
 
-    const rows = await sql`
+    /* 2️⃣ Return tracks for a specific release */
+    if (releaseId) {
+      const rows = await sql`
+        SELECT track_id, release_id, track_number, title, audio_url
+        FROM tracks
+        WHERE release_id = ${releaseId}
+        ORDER BY track_number NULLS LAST, created_at ASC
+      `;
+      return NextResponse.json({ ok: true, tracks: rows });
+    }
+
+    /* 3️⃣ NEW: Return ALL tracks (Your Tracks library) */
+    const allRows = await sql`
       SELECT track_id, release_id, track_number, title, audio_url
       FROM tracks
-      WHERE release_id = ${releaseId}
-      ORDER BY track_number NULLS LAST, created_at ASC
+      ORDER BY release_id, track_number NULLS LAST, created_at ASC
     `;
 
-    return NextResponse.json({ ok: true, tracks: rows });
+    return NextResponse.json({ ok: true, tracks: allRows });
   } catch (err) {
     console.error("GET /api/tracks error:", err);
     return error("Failed to load tracks", 500);
   }
 }
 
-/* POST /api/tracks */
+/* ----------------------------------------------------
+   POST /api/tracks
+---------------------------------------------------- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -64,7 +80,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/* PATCH /api/tracks */
+/* ----------------------------------------------------
+   PATCH /api/tracks
+---------------------------------------------------- */
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
@@ -92,7 +110,9 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-/* DELETE /api/tracks?trackId=... */
+/* ----------------------------------------------------
+   DELETE /api/tracks?trackId=...
+---------------------------------------------------- */
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

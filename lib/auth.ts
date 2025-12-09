@@ -1,7 +1,8 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
+// lib/auth.ts
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
 import { query } from "@/lib/db";
+import { compare } from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   // Uses NEXTAUTH_SECRET from .env.local
@@ -59,7 +60,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // This object becomes `user` in the jwt callback
+        // Returned object becomes the "user" in jwt() callback
         return {
           id: user.user_id,
           email: user.email,
@@ -72,31 +73,21 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // On login, merge user fields into the JWT
+      // Merge user data into token at login
       if (user) {
-        const u = user as {
-          id: string;
-          artistId: string | null;
-          role: string | null;
-        };
-
-        // keep both `id` and `userId` for compatibility
-        (token as any).id = u.id;
-        (token as any).userId = u.id;
-        (token as any).artistId = u.artistId;
-        (token as any).role = u.role;
+        token.userId = (user as any).id;
+        token.artistId = (user as any).artistId;
+        token.role = (user as any).role;
       }
       return token;
     },
 
     async session({ session, token }) {
-      // Expose token fields on session.user
+      // Expose token fields to `session.user`
       if (session.user) {
-        (session.user as any).id = (token as any).id ?? (token as any).userId;
-        (session.user as any).userId =
-          (token as any).userId ?? (token as any).id;
-        (session.user as any).artistId = (token as any).artistId ?? null;
-        (session.user as any).role = (token as any).role ?? null;
+        (session.user as any).userId = token.userId;
+        (session.user as any).artistId = token.artistId;
+        (session.user as any).role = token.role;
       }
       return session;
     },
@@ -106,7 +97,3 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 };
-
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
